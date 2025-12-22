@@ -10,4 +10,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  proxy: {
+    "/": "localhost:3000",
+  },
 });

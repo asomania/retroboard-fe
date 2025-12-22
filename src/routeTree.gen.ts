@@ -14,13 +14,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as _layoutRouteImport } from './routes/__layout'
 import { Route as _layoutIndexRouteImport } from './routes/__layout/index'
 
-const BoardLazyRouteImport = createFileRoute('/board')()
+const BoardBoardIDLazyRouteImport = createFileRoute('/board/$boardID')()
 
-const BoardLazyRoute = BoardLazyRouteImport.update({
-  id: '/board',
-  path: '/board',
-  getParentRoute: () => rootRouteImport,
-} as any).lazy(() => import('./routes/board.lazy').then((d) => d.Route))
 const _layoutRoute = _layoutRouteImport.update({
   id: '/__layout',
   getParentRoute: () => rootRouteImport,
@@ -30,43 +25,43 @@ const _layoutIndexRoute = _layoutIndexRouteImport.update({
   path: '/',
   getParentRoute: () => _layoutRoute,
 } as any)
+const BoardBoardIDLazyRoute = BoardBoardIDLazyRouteImport.update({
+  id: '/board/$boardID',
+  path: '/board/$boardID',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import('./routes/board/$boardID.lazy').then((d) => d.Route),
+)
 
 export interface FileRoutesByFullPath {
-  '/board': typeof BoardLazyRoute
+  '/board/$boardID': typeof BoardBoardIDLazyRoute
   '/': typeof _layoutIndexRoute
 }
 export interface FileRoutesByTo {
-  '/board': typeof BoardLazyRoute
+  '/board/$boardID': typeof BoardBoardIDLazyRoute
   '/': typeof _layoutIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/__layout': typeof _layoutRouteWithChildren
-  '/board': typeof BoardLazyRoute
+  '/board/$boardID': typeof BoardBoardIDLazyRoute
   '/__layout/': typeof _layoutIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/board' | '/'
+  fullPaths: '/board/$boardID' | '/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/board' | '/'
-  id: '__root__' | '/__layout' | '/board' | '/__layout/'
+  to: '/board/$boardID' | '/'
+  id: '__root__' | '/__layout' | '/board/$boardID' | '/__layout/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   _layoutRoute: typeof _layoutRouteWithChildren
-  BoardLazyRoute: typeof BoardLazyRoute
+  BoardBoardIDLazyRoute: typeof BoardBoardIDLazyRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/board': {
-      id: '/board'
-      path: '/board'
-      fullPath: '/board'
-      preLoaderRoute: typeof BoardLazyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/__layout': {
       id: '/__layout'
       path: ''
@@ -80,6 +75,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof _layoutIndexRouteImport
       parentRoute: typeof _layoutRoute
+    }
+    '/board/$boardID': {
+      id: '/board/$boardID'
+      path: '/board/$boardID'
+      fullPath: '/board/$boardID'
+      preLoaderRoute: typeof BoardBoardIDLazyRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -97,7 +99,7 @@ const _layoutRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   _layoutRoute: _layoutRouteWithChildren,
-  BoardLazyRoute: BoardLazyRoute,
+  BoardBoardIDLazyRoute: BoardBoardIDLazyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
