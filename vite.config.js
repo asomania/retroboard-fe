@@ -10,7 +10,12 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
-  proxy: {
-    "/": "localhost:3000",
+  server: {
+    proxy: {
+      "/boards": {
+        target: "http://localhost:3000",
+        changeOrigin: true,
+      },
+    },
   },
 });
