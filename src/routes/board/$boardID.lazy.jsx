@@ -100,6 +100,25 @@ function BoardDetailRoute() {
                         </span>
                       </div>
                     )}
+                    {Array.isArray(item.comments) && item.comments.length > 0 ? (
+                      <div className="mt-3 space-y-2 rounded-xl border border-white/10 bg-slate-900/50 px-3 py-3 shadow-[0_10px_30px_rgba(0,0,0,0.3)]">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-white">
+                          <span className="grid h-7 w-7 place-items-center rounded-full bg-white/10 text-[11px] uppercase text-white/80">
+                            {item.comments.length}
+                          </span>
+                          Yorumlar
+                        </div>
+                        <div className="space-y-2">
+                          {item.comments.map((comment) => (
+                            <CommentItem key={comment.id} entry={comment} />
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-3 rounded-xl border border-dashed border-white/15 bg-white/5 px-3 py-2 text-xs text-white/60">
+                        Henüz yorum yok. İlk notu ekleyen ol.
+                      </div>
+                    )}
                   </article>
                 ))}
               </div>
@@ -179,6 +198,27 @@ function buildColumns(data) {
   }
 
   return defaults;
+}
+
+function CommentItem({ entry }) {
+  return (
+    <div
+      className="space-y-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 shadow-[0_8px_18px_rgba(0,0,0,0.2)]"
+    >
+      <div className="flex items-center justify-between gap-2 text-[11px] uppercase tracking-[0.08em] text-white/60">
+        <div className="flex items-center gap-2 text-xs font-semibold text-white">
+          <span className="grid h-7 w-7 place-items-center rounded-full bg-white/10 text-[11px] uppercase text-white/80">
+            {(entry.author || "Anonim").slice(0, 2)}
+          </span>
+          <span>{entry.author || "Anonim"}</span>
+        </div>
+        <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-white/50">
+          {entry.createdAt || "Şimdi"}
+        </span>
+      </div>
+      <p className="text-sm leading-relaxed text-white/90">{entry.text}</p>
+    </div>
+  );
 }
 
 function UserIcon() {
