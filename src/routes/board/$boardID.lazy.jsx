@@ -1,6 +1,6 @@
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Modal from "../../Modal.jsx";
 
 export const Route = createLazyFileRoute("/board/$boardID")({
@@ -10,6 +10,9 @@ export const Route = createLazyFileRoute("/board/$boardID")({
 function BoardDetailRoute() {
   const { boardID } = Route.useParams();
   const [users, setUsers] = useState(null);
+  const [boardData, setBoardData] = useState(null);
+  const [cardDrafts, setCardDrafts] = useState({});
+  const [commentDrafts, setCommentDrafts] = useState({});
   const { data, error, isLoading } = useQuery({
     queryKey: ["board", boardID],
     queryFn: async () => {
@@ -19,7 +22,68 @@ function BoardDetailRoute() {
     },
   });
 
-  const columns = buildColumns(data);
+  useEffect(() => {
+    setBoardData(data);
+  }, [data]);
+
+  const columns = buildColumns(boardData);
+
+  const handleAddCard = (columnId) => {
+    const text = (cardDrafts[columnId] || "").trim();
+    if (!text || !boardData) return;
+    const nextCard = {
+      id: `new-${Date.now()}`,
+      text,
+      votes: 0,
+      comments: [],
+    };
+    setBoardData((prev) =>
+      prev
+        ? {
+            ...prev,
+            columns: prev.columns.map((col) =>
+              col.id === columnId
+                ? { ...col, cards: [...(col.cards || []), nextCard] }
+                : col
+            ),
+          }
+        : prev
+    );
+    setCardDrafts((prev) => ({ ...prev, [columnId]: "" }));
+  };
+
+  const handleAddComment = (columnId, cardId) => {
+    const text = (commentDrafts[cardId] || "").trim();
+    if (!text || !boardData) return;
+    const nextComment = {
+      id: `cm-${Date.now()}`,
+      author: "Sen",
+      text,
+      createdAt: "Şimdi",
+    };
+    setBoardData((prev) =>
+      prev
+        ? {
+            ...prev,
+            columns: prev.columns.map((col) => {
+              if (col.id !== columnId) return col;
+              return {
+                ...col,
+                cards: (col.cards || []).map((card) =>
+                  card.id === cardId
+                    ? {
+                        ...card,
+                        comments: [...(card.comments || []), nextComment],
+                      }
+                    : card
+                ),
+              };
+            }),
+          }
+        : prev
+    );
+    setCommentDrafts((prev) => ({ ...prev, [cardId]: "" }));
+  };
 
   return (
     <div className="relative min-h-screen bg-slate-950 text-slate-50">
@@ -78,6 +142,33 @@ function BoardDetailRoute() {
                   {column.items.length}
                 </span>
               </header>
+
+              <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white/80 shadow-inner">
+                <p className="mb-2 text-[11px] uppercase tracking-[0.14em] text-white/60">
+                  Kart ekle
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    value={cardDrafts[column.id] ?? ""}
+                    onChange={(e) =>
+                      setCardDrafts((prev) => ({
+                        ...prev,
+                        [column.id]: e.target.value,
+                      }))
+                    }
+                    placeholder="Başlık ya da not yaz"
+                    className="w-full rounded-lg border border-white/10 bg-slate-900/70 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-emerald-400/60 focus:outline-none"
+                  />
+                  <button
+                    onClick={() => handleAddCard(column.id)}
+                    className="rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-3 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-500/20 disabled:opacity-40"
+                    disabled={!cardDrafts[column.id]?.trim() || !boardData}
+                  >
+                    Ekle
+                  </button>
+                </div>
+              </div>
+
               <div className="flex flex-1 flex-col gap-2">
                 {column.items.length === 0 && (
                   <p className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/60">
@@ -87,7 +178,7 @@ function BoardDetailRoute() {
                 {column.items.map((item, idx) => (
                   <article
                     key={item.id || `${column.id}-${idx}`}
-                    className="space-y-1 rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
+                    className="space-y-2 rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
                   >
                     <p className="leading-relaxed">
                       {item.text || item.title || "Kart"}
@@ -100,8 +191,9 @@ function BoardDetailRoute() {
                         </span>
                       </div>
                     )}
+
                     {Array.isArray(item.comments) && item.comments.length > 0 ? (
-                      <div className="mt-3 space-y-2 rounded-xl border border-white/10 bg-slate-900/50 px-3 py-3 shadow-[0_10px_30px_rgba(0,0,0,0.3)]">
+                      <div className="mt-2 space-y-2 rounded-xl border border-white/10 bg-slate-900/50 px-3 py-3 shadow-[0_10px_30px_rgba(0,0,0,0.3)]">
                         <div className="flex items-center gap-2 text-xs font-semibold text-white">
                           <span className="grid h-7 w-7 place-items-center rounded-full bg-white/10 text-[11px] uppercase text-white/80">
                             {item.comments.length}
@@ -115,10 +207,31 @@ function BoardDetailRoute() {
                         </div>
                       </div>
                     ) : (
-                      <div className="mt-3 rounded-xl border border-dashed border-white/15 bg-white/5 px-3 py-2 text-xs text-white/60">
+                      <div className="mt-2 rounded-xl border border-dashed border-white/15 bg-white/5 px-3 py-2 text-xs text-white/60">
                         Henüz yorum yok. İlk notu ekleyen ol.
                       </div>
                     )}
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        value={commentDrafts[item.id] ?? ""}
+                        onChange={(e) =>
+                          setCommentDrafts((prev) => ({
+                            ...prev,
+                            [item.id]: e.target.value,
+                          }))
+                        }
+                        placeholder="Yorum ekle"
+                        className="w-full rounded-lg border border-white/10 bg-slate-900/70 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-emerald-400/60 focus:outline-none"
+                      />
+                      <button
+                        onClick={() => handleAddComment(column.id, item.id)}
+                        className="rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-3 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-500/20 disabled:opacity-40"
+                        disabled={!commentDrafts[item.id]?.trim() || !boardData}
+                      >
+                        Gönder
+                      </button>
+                    </div>
                   </article>
                 ))}
               </div>
@@ -126,13 +239,13 @@ function BoardDetailRoute() {
           ))}
         </section>
 
-        {data && (
+        {boardData && (
           <section className="mt-8">
             <p className="text-xs uppercase tracking-[0.2em] text-white/50">
               Ham veri
             </p>
             <pre className="mt-2 max-h-72 overflow-auto rounded-2xl border border-white/10 bg-black/50 p-4 text-xs text-emerald-100/90">
-              {JSON.stringify(data, null, 2)}
+              {JSON.stringify(boardData, null, 2)}
             </pre>
           </section>
         )}
