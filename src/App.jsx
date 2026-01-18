@@ -1,18 +1,52 @@
 import { useState } from "react";
 import logo from "/team.svg";
 import { useNavigate } from "@tanstack/react-router";
+import { useCreateBoard } from "./api/queries/boards";
+import { createClientId } from "./utils/ids";
 
 function App() {
   const [boardName, setBoardName] = useState("");
   const [boardDate, setBoardDate] = useState("");
+  const [boardTime, setBoardTime] = useState("");
   const [requireInvite, setRequireInvite] = useState(true);
+  const [participantsInput, setParticipantsInput] = useState("");
   const [joinKey, setJoinKey] = useState("");
   const navigate = useNavigate();
+  const { mutateAsync, isPending, error } = useCreateBoard();
 
-  const handleCreateBoard = (event) => {
+  const handleCreateBoard = async (event) => {
     event.preventDefault();
-    // TODO: replace with actual creation request or navigation
-    console.log("Create board", { boardName, boardDate, requireInvite });
+    const name = boardName.trim();
+    if (!name) return;
+    const trimmedDate = boardDate.trim();
+    const trimmedTime = boardTime.trim();
+    const isoDate =
+      trimmedDate && trimmedTime
+        ? new Date(`${trimmedDate}T${trimmedTime}`).toISOString()
+        : undefined;
+
+    const participants = participantsInput
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    try {
+      const created = await mutateAsync({
+        id: createClientId("board"),
+        name,
+        date: isoDate,
+        inviteRequired: requireInvite,
+        participants,
+      });
+      if (created?.id) {
+        navigate({
+          to: "/board/$boardID",
+          params: { boardID: created.id },
+        });
+      }
+    } catch (requestError) {
+      console.error(requestError);
+    }
   };
 
   const handleJoinWithKey = (event) => {
@@ -107,13 +141,36 @@ function App() {
                     />
                   </label>
 
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="block space-y-2 text-sm font-medium text-white/80">
+                      Tarih
+                      <input
+                        type="date"
+                        value={boardDate}
+                        onChange={(event) => setBoardDate(event.target.value)}
+                        className="w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-white placeholder:text-white/40 shadow-inner shadow-black/40 outline-none transition focus:border-emerald-300 focus:ring-2 focus:ring-emerald-300/40"
+                      />
+                    </label>
+                    <label className="block space-y-2 text-sm font-medium text-white/80">
+                      Saat
+                      <input
+                        type="time"
+                        value={boardTime}
+                        onChange={(event) => setBoardTime(event.target.value)}
+                        className="w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-white placeholder:text-white/40 shadow-inner shadow-black/40 outline-none transition focus:border-emerald-300 focus:ring-2 focus:ring-emerald-300/40"
+                      />
+                    </label>
+                  </div>
+
                   <label className="block space-y-2 text-sm font-medium text-white/80">
-                    Tarih
+                    Katılımcılar
                     <input
                       type="text"
-                      placeholder="GG/AA/YYYY - 14:00"
-                      value={boardDate}
-                      onChange={(event) => setBoardDate(event.target.value)}
+                      placeholder="Eren, Ayşe, Mert"
+                      value={participantsInput}
+                      onChange={(event) =>
+                        setParticipantsInput(event.target.value)
+                      }
                       className="w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-white placeholder:text-white/40 shadow-inner shadow-black/40 outline-none transition focus:border-emerald-300 focus:ring-2 focus:ring-emerald-300/40"
                     />
                   </label>
@@ -137,9 +194,15 @@ function App() {
                   <button
                     type="submit"
                     className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 px-4 py-3 text-sm font-semibold uppercase tracking-wide text-emerald-950 shadow-lg shadow-emerald-500/40 transition hover:bg-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-200"
+                    disabled={isPending || !boardName.trim()}
                   >
-                    Board’u başlat
+                    {isPending ? "Oluşturuluyor..." : "Board’u başlat"}
                   </button>
+                  {error && (
+                    <p className="text-center text-xs text-rose-200">
+                      {error.message}
+                    </p>
+                  )}
                   <p className="text-center text-xs text-white/60">
                     Davetliler, paylaştığın bağlantıyla direkt katılabilir.
                   </p>

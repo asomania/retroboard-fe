@@ -1,6 +1,10 @@
 import { createLazyFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useBoard } from "../../api/queries/boards";
+import { createCard } from "../../api/domain/cards";
+import { createComment } from "../../api/domain/comments";
+import { createClientId } from "../../utils/ids";
 import Modal from "../../Modal.jsx";
 
 export const Route = createLazyFileRoute("/board/$boardID")({
@@ -13,12 +17,20 @@ function BoardDetailRoute() {
   const [boardData, setBoardData] = useState(null);
   const [cardDrafts, setCardDrafts] = useState({});
   const [commentDrafts, setCommentDrafts] = useState({});
-  const { data, error, isLoading } = useQuery({
-    queryKey: ["board", boardID],
-    queryFn: async () => {
-      const res = await fetch(`/boards/${boardID}`);
-      if (!res.ok) throw new Error(`Failed to load board ${boardID}`);
-      return res.json();
+  const { data, error, isLoading } = useBoard(boardID);
+  const queryClient = useQueryClient();
+  const createCardMutation = useMutation({
+    mutationFn: ({ columnId, payload }) =>
+      createCard(boardID, columnId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["board", boardID] });
+    },
+  });
+  const createCommentMutation = useMutation({
+    mutationFn: ({ columnId, cardId, payload }) =>
+      createComment(boardID, columnId, cardId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["board", boardID] });
     },
   });
 
@@ -28,61 +40,89 @@ function BoardDetailRoute() {
 
   const columns = buildColumns(boardData);
 
-  const handleAddCard = (columnId) => {
+  const handleAddCard = async (columnId) => {
     const text = (cardDrafts[columnId] || "").trim();
     if (!text || !boardData) return;
-    const nextCard = {
-      id: `new-${Date.now()}`,
+    const payload = {
+      id: createClientId("card"),
       text,
       votes: 0,
-      comments: [],
     };
-    setBoardData((prev) =>
-      prev
-        ? {
-            ...prev,
-            columns: prev.columns.map((col) =>
-              col.id === columnId
-                ? { ...col, cards: [...(col.cards || []), nextCard] }
-                : col
-            ),
-          }
-        : prev
-    );
-    setCardDrafts((prev) => ({ ...prev, [columnId]: "" }));
+    try {
+      const created = await createCardMutation.mutateAsync({
+        columnId,
+        payload,
+      });
+      const nextCard = {
+        ...payload,
+        ...(created || {}),
+        comments: created?.comments || [],
+      };
+      setBoardData((prev) =>
+        prev
+          ? {
+              ...prev,
+              columns: prev.columns.map((col) =>
+                col.id === columnId
+                  ? { ...col, cards: [...(col.cards || []), nextCard] }
+                  : col
+              ),
+            }
+          : prev
+      );
+      setCardDrafts((prev) => ({ ...prev, [columnId]: "" }));
+    } catch (requestError) {
+      console.error(requestError);
+    }
   };
 
-  const handleAddComment = (columnId, cardId) => {
+  const handleAddComment = async (columnId, cardId) => {
     const text = (commentDrafts[cardId] || "").trim();
     if (!text || !boardData) return;
-    const nextComment = {
-      id: `cm-${Date.now()}`,
+    const payload = {
+      id: createClientId("comment"),
       author: "Sen",
       text,
-      createdAt: "Şimdi",
+      createdAt: new Date().toISOString(),
     };
-    setBoardData((prev) =>
-      prev
-        ? {
-            ...prev,
-            columns: prev.columns.map((col) => {
-              if (col.id !== columnId) return col;
-              return {
-                ...col,
-                cards: (col.cards || []).map((card) =>
-                  card.id === cardId
-                    ? {
-                        ...card,
-                        comments: [...(card.comments || []), nextComment],
-                      }
-                    : card
-                ),
-              };
-            }),
-          }
-        : prev
-    );
-    setCommentDrafts((prev) => ({ ...prev, [cardId]: "" }));
+    try {
+      const created = await createCommentMutation.mutateAsync({
+        columnId,
+        cardId,
+        payload,
+      });
+      const nextComment = {
+        ...payload,
+        ...(created || {}),
+      };
+      setBoardData((prev) =>
+        prev
+          ? {
+              ...prev,
+              columns: prev.columns.map((col) => {
+                if (col.id !== columnId) return col;
+                return {
+                  ...col,
+                  cards: (col.cards || []).map((card) =>
+                    card.id === cardId
+                      ? {
+                          ...card,
+                          comments: [
+                            ...(card.comments || []),
+                            nextComment,
+                          ],
+                        }
+                      : card
+                  ),
+                };
+              }),
+            }
+          : prev
+      );
+      setCommentDrafts((prev) => ({ ...prev, [cardId]: "" }));
+    } catch (requestError) {
+      console.error(requestError);
+    }
   };
 
   return (
