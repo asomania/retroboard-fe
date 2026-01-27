@@ -1,3 +1,4 @@
+import { Users } from "lucide-react";
 import LoadingState from "../common/LoadingState.jsx";
 import ErrorState from "../common/ErrorState.jsx";
 
@@ -38,8 +39,9 @@ const BoardHeader = ({
         <button
           onClick={onOpenParticipants}
           className="flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/15 hover:text-white"
+          aria-label="Katilimcilari goster"
         >
-          <UserIcon />
+          <Users className="h-4 w-4" />
           Katılımcılar
           <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] text-white/80">
             {participantsCount}
@@ -49,34 +51,5 @@ const BoardHeader = ({
     </header>
   );
 };
-
-const UserIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.6"
-    className="h-4 w-4"
-    aria-hidden="true"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
-    />
-    <circle cx="9" cy="7" r="4" />
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M18 12a3 3 0 1 0-2.988-2.7"
-    />
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M22 21v-2a4 4 0 0 0-3-3.87"
-    />
-  </svg>
-);
 
 export default BoardHeader;

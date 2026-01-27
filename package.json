@@ -15,6 +15,7 @@
     "@tanstack/react-query-devtools": "^5.91.1",
     "@tanstack/react-router": "^1.142.7",
     "@tanstack/react-router-devtools": "^1.142.7",
+    "lucide-react": "^0.469.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

@@ -1,3 +1,5 @@
+import { Users, X } from "lucide-react";
+import { useEffect } from "react";
 import Modal from "../../Modal.jsx";
 
 /**
@@ -16,25 +18,48 @@ const ParticipantsModal = ({
   boardID,
   participants,
 }) => {
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
     <Modal>
-      <div className="w-[420px] max-w-full rounded-2xl border border-white/10 bg-slate-900/95 p-6 text-white shadow-[0_24px_60px_rgba(0,0,0,0.6)]">
+      <div
+        className="w-[420px] max-w-full rounded-2xl border border-white/10 bg-slate-900/95 p-6 text-white shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Katilimcilar"
+      >
         <header className="mb-4 flex items-center justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.16em] text-white/60">
-              Katılımcılar
-            </p>
-            <p className="text-lg font-semibold text-white">
-              {boardName || `Board #${boardID}`}
-            </p>
+          <div className="flex items-center gap-3">
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-xs uppercase text-white/70">
+              <Users className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-xs uppercase tracking-[0.16em] text-white/60">
+                Katılımcılar
+              </p>
+              <p className="text-lg font-semibold text-white">
+                {boardName || `Board #${boardID}`}
+              </p>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs text-white/80 transition hover:bg-white/15"
+            className="rounded-full border border-white/15 bg-white/10 p-2 text-white/80 transition hover:bg-white/15"
+            aria-label="Kapat"
           >
-            Kapat
+            <X className="h-4 w-4" />
           </button>
         </header>
         <div className="space-y-2">

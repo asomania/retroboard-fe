@@ -3,10 +3,13 @@ import { useParams } from "@tanstack/react-router";
 import BoardHeader from "../components/board/BoardHeader.jsx";
 import BoardColumn from "../components/board/BoardColumn.jsx";
 import BoardCard from "../components/board/BoardCard.jsx";
+import BoardRawData from "../components/board/BoardRawData.jsx";
+import AddCardModal from "../components/modals/AddCardModal.jsx";
 import ParticipantsModal from "../components/modals/ParticipantsModal.jsx";
 import { useBoard } from "../hooks/useBoard.js";
 import { useBoardMutations } from "../hooks/useBoardMutations.js";
 import { useDraftState } from "../hooks/useDraftState.js";
+import { useToggle } from "../hooks/useToggle.js";
 import { buildColumns } from "../utils/boardHelpers.js";
 import { createClientId } from "../utils/ids.js";
 
@@ -16,7 +19,9 @@ import { createClientId } from "../utils/ids.js";
  */
 const BoardDetailPage = () => {
   const { boardID } = useParams({ from: "/board/$boardID" });
-  const [isParticipantsOpen, setIsParticipantsOpen] = useState(false);
+  const [activeColumnId, setActiveColumnId] = useState(null);
+  const participantsModal = useToggle(false);
+  const addCardModal = useToggle(false);
   const { data, error, isLoading } = useBoard(boardID);
   const { createCard, createComment, isCreatingCard, isCreatingComment } =
     useBoardMutations(boardID);
@@ -35,6 +40,10 @@ const BoardDetailPage = () => {
     try {
       await createCard(columnId, payload);
       clearDraft("card", columnId);
+      if (columnId === activeColumnId) {
+        addCardModal.close();
+        setActiveColumnId(null);
+      }
     } catch (requestError) {
       console.error(requestError);
     }
@@ -57,6 +66,19 @@ const BoardDetailPage = () => {
     }
   };
 
+  const openAddCardModal = (columnId) => {
+    setActiveColumnId(columnId);
+    addCardModal.open();
+  };
+
+  const closeAddCardModal = () => {
+    if (activeColumnId) {
+      clearDraft("card", activeColumnId);
+    }
+    setActiveColumnId(null);
+    addCardModal.close();
+  };
+
   return (
     <div className="relative min-h-screen bg-slate-950 text-slate-50">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(94,234,212,0.18),transparent_28%),radial-gradient(circle_at_80%_10%,rgba(236,72,153,0.16),transparent_26%),radial-gradient(circle_at_50%_80%,rgba(59,130,246,0.18),transparent_24%)]" />
@@ -69,7 +91,7 @@ const BoardDetailPage = () => {
           error={error}
           hasData={Boolean(data)}
           participantsCount={data?.participants?.length ?? 0}
-          onOpenParticipants={() => setIsParticipantsOpen(true)}
+          onOpenParticipants={participantsModal.open}
         />
 
         <section className="mt-8 grid gap-4 md:grid-cols-3">
@@ -77,12 +99,8 @@ const BoardDetailPage = () => {
             <BoardColumn
               key={column.id}
               column={column}
-              cardDraft={getDraft("card", column.id)}
-              onCardDraftChange={(value) =>
-                setDraft("card", column.id, value)
-              }
-              onAddCard={() => handleAddCard(column.id)}
-              disableAdd={!data || isCreatingCard}
+              onOpenAddCard={() => openAddCardModal(column.id)}
+              isAddDisabled={!data || isCreatingCard}
             >
               {column.items.map((item, idx) => (
                 <BoardCard
@@ -100,24 +118,26 @@ const BoardDetailPage = () => {
           ))}
         </section>
 
-        {data && (
-          <section className="mt-8">
-            <p className="text-xs uppercase tracking-[0.2em] text-white/50">
-              Ham veri
-            </p>
-            <pre className="mt-2 max-h-72 overflow-auto rounded-2xl border border-white/10 bg-black/50 p-4 text-xs text-emerald-100/90">
-              {JSON.stringify(data, null, 2)}
-            </pre>
-          </section>
-        )}
+        <BoardRawData data={data} />
       </main>
 
       <ParticipantsModal
-        isOpen={isParticipantsOpen}
-        onClose={() => setIsParticipantsOpen(false)}
+        isOpen={participantsModal.value}
+        onClose={participantsModal.close}
         boardName={data?.name}
         boardID={boardID}
         participants={data?.participants ?? []}
+      />
+      <AddCardModal
+        isOpen={addCardModal.value}
+        columnId={activeColumnId}
+        value={activeColumnId ? getDraft("card", activeColumnId) : ""}
+        onChange={(value) =>
+          activeColumnId && setDraft("card", activeColumnId, value)
+        }
+        onAdd={handleAddCard}
+        onClose={closeAddCardModal}
+        isSubmitting={isCreatingCard}
       />
     </div>
   );
