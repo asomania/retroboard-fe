@@ -35,7 +35,7 @@ const QuickCommentForm = ({
   }, [onCancel]);
 
   return (
-    <div className="absolute left-4 right-4 top-full z-10 mt-3 rounded-xl border border-white/10 bg-slate-950/95 p-3 text-xs text-white shadow-[0_12px_28px_rgba(0,0,0,0.45)]">
+    <div className="mt-3 rounded-xl border border-white/10 bg-slate-950/95 p-3 text-xs text-white shadow-[0_12px_28px_rgba(0,0,0,0.45)]">
       <label className="mb-2 block text-[11px] uppercase tracking-[0.14em] text-white/60">
         Hızlı yorum
       </label>

@@ -1,8 +1,7 @@
 import {
   ChevronDown,
   ChevronUp,
-  Edit,
-  Eye,
+  Heart,
   MessageCircle,
   MessageSquare,
   Trash2,
@@ -19,8 +18,7 @@ import { useToggle } from "../../hooks/useToggle.js";
  * @param {(value: string) => void} props.onCommentDraftChange
  * @param {() => void} props.onAddComment
  * @param {boolean} props.disableAdd
- * @param {() => void} [props.onView]
- * @param {() => void} [props.onEdit]
+ * @param {() => void} [props.onLike]
  * @param {() => void} [props.onDelete]
  * @returns {JSX.Element}
  */
@@ -30,8 +28,7 @@ const BoardCard = ({
   onCommentDraftChange,
   onAddComment,
   disableAdd,
-  onView,
-  onEdit,
+  onLike,
   onDelete,
 }) => {
   const comments = Array.isArray(item.comments) ? item.comments : [];
@@ -94,6 +91,18 @@ const BoardCard = ({
           <MessageCircle className="h-4 w-4" />
           Yorum yap
         </button>
+        <IconButton
+          label="Sil"
+          icon={Trash2}
+          onClick={onDelete}
+          disabled={!onDelete}
+        />
+        <IconButton
+          label="Beğen"
+          icon={Heart}
+          onClick={onLike}
+          disabled={!onLike}
+        />
       </div>
 
       {isCommentsOpen && <CardComments comments={comments} />}
@@ -107,27 +116,6 @@ const BoardCard = ({
           disabled={!commentDraft?.trim() || disableAdd}
         />
       )}
-
-      <div className="mt-2 flex items-center gap-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-        <IconButton
-          label="Detay"
-          icon={Eye}
-          onClick={onView}
-          disabled={!onView}
-        />
-        <IconButton
-          label="Düzenle"
-          icon={Edit}
-          onClick={onEdit}
-          disabled={!onEdit}
-        />
-        <IconButton
-          label="Sil"
-          icon={Trash2}
-          onClick={onDelete}
-          disabled={!onDelete}
-        />
-      </div>
     </article>
   );
 };
@@ -139,9 +127,10 @@ const IconButton = ({ label, icon: Icon, onClick, disabled }) => (
     disabled={disabled}
     aria-label={label}
     title={label}
-    className="rounded-full border border-white/10 bg-white/5 p-2 text-white/70 transition hover:border-white/30 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+    className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-white/70 transition hover:border-white/30 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
   >
-    <Icon className="h-4 w-4" />
+    <Icon className="h-3.5 w-3.5" />
+    {label}
   </button>
 );
 
