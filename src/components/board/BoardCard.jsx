@@ -102,6 +102,7 @@ const BoardCard = ({
           icon={Heart}
           onClick={onLike}
           disabled={!onLike}
+          showLabel={false}
         />
       </div>
 
@@ -120,7 +121,7 @@ const BoardCard = ({
   );
 };
 
-const IconButton = ({ label, icon: Icon, onClick, disabled }) => (
+const IconButton = ({ label, icon: Icon, onClick, disabled, showLabel = true }) => (
   <button
     type="button"
     onClick={onClick}
@@ -130,7 +131,7 @@ const IconButton = ({ label, icon: Icon, onClick, disabled }) => (
     className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-white/70 transition hover:border-white/30 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
   >
     <Icon className="h-3.5 w-3.5" />
-    {label}
+    {showLabel && label}
   </button>
 );
 
