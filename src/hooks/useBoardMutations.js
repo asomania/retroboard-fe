@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createCard } from "../api/domain/cards";
+import { createCard, updateCard } from "../api/domain/cards";
 import { createComment } from "../api/domain/comments";
 
 const addCardToBoard = (board, columnId, card) => {
@@ -34,8 +34,10 @@ const updateCardInBoard = (board, columnId, cardId, updater) => {
  * @returns {{
  *   createCard: (columnId: string, payload: any) => Promise<any>,
  *   createComment: (columnId: string, cardId: string, payload: any) => Promise<any>,
+ *   likeCard: (columnId: string, cardId: string, payload: { text?: string, votes: number }) => Promise<any>,
  *   isCreatingCard: boolean,
- *   isCreatingComment: boolean
+ *   isCreatingComment: boolean,
+ *   isLikingCard: boolean
  * }}
  */
 const useBoardMutations = (boardId) => {
@@ -119,17 +121,49 @@ const useBoardMutations = (boardId) => {
     },
   });
 
+  const likeCardMutation = useMutation({
+    mutationFn: ({ columnId, cardId, payload }) =>
+      updateCard(boardId, columnId, cardId, payload),
+    onMutate: async ({ columnId, cardId, payload }) => {
+      await queryClient.cancelQueries({ queryKey: boardKey });
+      const previous = queryClient.getQueryData(boardKey);
+      queryClient.setQueryData(boardKey, (current) =>
+        current
+          ? updateCardInBoard(current, columnId, cardId, (card) => ({
+              ...card,
+              ...payload,
+            }))
+          : current
+      );
+      return { previous };
+    },
+    onError: (mutationError, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(boardKey, context.previous);
+      }
+      console.error(mutationError);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: boardKey });
+    },
+  });
+
   const createCardRequest = (columnId, payload) =>
     createCardMutation.mutateAsync({ columnId, payload });
 
   const createCommentRequest = (columnId, cardId, payload) =>
     createCommentMutation.mutateAsync({ columnId, cardId, payload });
 
+  const likeCardRequest = (columnId, cardId, payload) =>
+    likeCardMutation.mutateAsync({ columnId, cardId, payload });
+
   return {
     createCard: createCardRequest,
     createComment: createCommentRequest,
+    likeCard: likeCardRequest,
     isCreatingCard: createCardMutation.isPending,
     isCreatingComment: createCommentMutation.isPending,
+    isLikingCard: likeCardMutation.isPending,
   };
 };
 

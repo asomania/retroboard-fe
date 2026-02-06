@@ -16,6 +16,10 @@ export default defineConfig(({ mode }) => {
     ],
     server: {
       proxy: {
+        "/api": {
+          target: apiUrl,
+          changeOrigin: true,
+        },
         "/boards": {
           target: apiUrl,
           changeOrigin: true,

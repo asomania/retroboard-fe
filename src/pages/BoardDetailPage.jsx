@@ -9,6 +9,7 @@ import ParticipantsModal from "../components/modals/ParticipantsModal.jsx";
 import { useBoard } from "../hooks/useBoard.js";
 import { useBoardMutations } from "../hooks/useBoardMutations.js";
 import { useDraftState } from "../hooks/useDraftState.js";
+import { useBoardStream } from "../hooks/useBoardStream.js";
 import { useToggle } from "../hooks/useToggle.js";
 import { buildColumns } from "../utils/boardHelpers.js";
 import { createClientId } from "../utils/ids.js";
@@ -23,9 +24,16 @@ const BoardDetailPage = () => {
   const participantsModal = useToggle(false);
   const addCardModal = useToggle(false);
   const { data, error, isLoading } = useBoard(boardID);
-  const { createCard, createComment, isCreatingCard, isCreatingComment } =
-    useBoardMutations(boardID);
+  const {
+    createCard,
+    createComment,
+    likeCard,
+    isCreatingCard,
+    isCreatingComment,
+    isLikingCard,
+  } = useBoardMutations(boardID);
   const { getDraft, setDraft, clearDraft } = useDraftState();
+  useBoardStream(boardID);
 
   const columns = useMemo(() => buildColumns(data), [data]);
 
@@ -61,6 +69,16 @@ const BoardDetailPage = () => {
     try {
       await createComment(columnId, cardId, payload);
       clearDraft("comment", cardId);
+    } catch (requestError) {
+      console.error(requestError);
+    }
+  };
+
+  const handleLikeCard = async (columnId, cardId, currentVotes, currentText) => {
+    if (!data) return;
+    const nextVotes = typeof currentVotes === "number" ? currentVotes + 1 : 1;
+    try {
+      await likeCard(columnId, cardId, { text: currentText, votes: nextVotes });
     } catch (requestError) {
       console.error(requestError);
     }
@@ -112,6 +130,17 @@ const BoardDetailPage = () => {
                   }
                   onAddComment={() => handleAddComment(column.id, item.id)}
                   disableAdd={!data || isCreatingComment}
+                  onLike={
+                    !data || isLikingCard
+                      ? undefined
+                      : () =>
+                          handleLikeCard(
+                            column.id,
+                            item.id,
+                            item.votes,
+                            item.text
+                          )
+                  }
                 />
               ))}
             </BoardColumn>
