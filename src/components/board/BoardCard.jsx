@@ -32,10 +32,7 @@ const BoardCard = ({
   onDelete,
 }) => {
   const comments = Array.isArray(item.comments) ? item.comments : [];
-  const {
-    value: isCommentsOpen,
-    toggle: toggleComments,
-  } = useToggle(false);
+  const { value: isCommentsOpen, toggle: toggleComments } = useToggle(false);
   const {
     value: isQuickCommentOpen,
     toggle: toggleQuickComment,
@@ -53,18 +50,12 @@ const BoardCard = ({
       <p className="text-base font-medium leading-relaxed">
         {item.text || item.title || "Kart"}
       </p>
-      {item.votes !== undefined && (
-        <div className="mt-3 flex items-center gap-3 text-xs text-white/60">
-          <Badge variant="vote">
-            <span className="h-2 w-2 rounded-full bg-amber-300" />
-            {item.votes} oy
-          </Badge>
-          <Badge variant="comment">
-            <MessageSquare className="h-3 w-3" />
-            {comments.length}
-          </Badge>
-        </div>
-      )}
+      <div className="mt-3 flex items-center gap-3 text-xs text-white/60">
+        <Badge variant="comment">
+          <MessageSquare className="h-3 w-3" />
+          {comments.length}
+        </Badge>
+      </div>
 
       <div className="flex flex-wrap items-center gap-3 text-xs text-white/70">
         <button
@@ -91,18 +82,14 @@ const BoardCard = ({
           <MessageCircle className="h-4 w-4" />
           Yorum yap
         </button>
-        <IconButton
-          label="Sil"
-          icon={Trash2}
-          onClick={onDelete}
-          disabled={!onDelete}
-        />
+        <IconButton icon={Trash2} onClick={onDelete} disabled={!onDelete} />
         <IconButton
           label="Beğen"
           icon={Heart}
           onClick={onLike}
           disabled={!onLike}
           showLabel={false}
+          value={item.votes}
         />
       </div>
 
@@ -121,7 +108,14 @@ const BoardCard = ({
   );
 };
 
-const IconButton = ({ label, icon: Icon, onClick, disabled, showLabel = true }) => (
+const IconButton = ({
+  label,
+  icon: Icon,
+  onClick,
+  disabled,
+  showLabel = true,
+  value,
+}) => (
   <button
     type="button"
     onClick={onClick}
@@ -131,6 +125,9 @@ const IconButton = ({ label, icon: Icon, onClick, disabled, showLabel = true }) 
     className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-white/70 transition hover:border-white/30 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
   >
     <Icon className="h-3.5 w-3.5" />
+    {value !== undefined && value !== null && (
+      <span className="font-medium text-white">{value}</span>
+    )}
     {showLabel && label}
   </button>
 );
