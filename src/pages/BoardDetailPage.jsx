@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useParams } from "@tanstack/react-router";
+import { useEffect } from "react";
 import BoardHeader from "../components/board/BoardHeader.jsx";
 import BoardColumn from "../components/board/BoardColumn.jsx";
 import BoardCard from "../components/board/BoardCard.jsx";
@@ -13,7 +14,7 @@ import { useBoardStream } from "../hooks/useBoardStream.js";
 import { useToggle } from "../hooks/useToggle.js";
 import { buildColumns } from "../utils/boardHelpers.js";
 import { createClientId } from "../utils/ids.js";
-
+import UserSignModal from "../components/modals/UserSignModal.jsx";
 /**
  * Board detail page composition.
  * @returns {JSX.Element}
@@ -23,6 +24,8 @@ const BoardDetailPage = () => {
   const [activeColumnId, setActiveColumnId] = useState(null);
   const participantsModal = useToggle(false);
   const addCardModal = useToggle(false);
+  const userSignModal = useToggle(false);
+  const [showUserSignModal, setShowUserSignModal] = useState(false);
   const { data, error, isLoading } = useBoard(boardID);
   const {
     createCard,
@@ -74,7 +77,12 @@ const BoardDetailPage = () => {
     }
   };
 
-  const handleLikeCard = async (columnId, cardId, currentVotes, currentText) => {
+  const handleLikeCard = async (
+    columnId,
+    cardId,
+    currentVotes,
+    currentText,
+  ) => {
     if (!data) return;
     const nextVotes = typeof currentVotes === "number" ? currentVotes + 1 : 1;
     try {
@@ -96,11 +104,21 @@ const BoardDetailPage = () => {
     setActiveColumnId(null);
     addCardModal.close();
   };
+  useEffect(() => {
+    if (localStorage.getItem("user") === null) {
+      userSignModal.open();
+    }
+  }, []);
 
   return (
     <div className="relative min-h-screen bg-slate-950 text-slate-50">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(94,234,212,0.18),transparent_28%),radial-gradient(circle_at_80%_10%,rgba(236,72,153,0.16),transparent_26%),radial-gradient(circle_at_50%_80%,rgba(59,130,246,0.18),transparent_24%)]" />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(60deg,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:72px_72px]" />
+
+      <UserSignModal
+        isOpen={userSignModal.value}
+        onClose={userSignModal.close}
+      />
 
       <main className="relative mx-auto max-w-6xl px-6 py-10">
         <BoardHeader
@@ -138,7 +156,7 @@ const BoardDetailPage = () => {
                             column.id,
                             item.id,
                             item.votes,
-                            item.text
+                            item.text,
                           )
                   }
                 />
