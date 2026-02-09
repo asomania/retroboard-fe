@@ -1,4 +1,4 @@
-import { Users } from "lucide-react";
+//import { Users } from "lucide-react";
 import LoadingState from "../common/LoadingState.jsx";
 import ErrorState from "../common/ErrorState.jsx";
 
@@ -17,8 +17,8 @@ const BoardHeader = ({
   isLoading,
   error,
   hasData,
-  participantsCount,
-  onOpenParticipants,
+  //participantsCount,
+  //onOpenParticipants,
 }) => {
   return (
     <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -36,6 +36,7 @@ const BoardHeader = ({
             Board hazır
           </button>
         )}
+        {/*
         <button
           onClick={onOpenParticipants}
           className="flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/15 hover:text-white"
@@ -47,6 +48,7 @@ const BoardHeader = ({
             {participantsCount}
           </span>
         </button>
+        */}
       </div>
     </header>
   );

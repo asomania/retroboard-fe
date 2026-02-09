@@ -8,7 +8,7 @@ const addCardToBoard = (board, columnId, card) => {
     columns: board.columns.map((column) =>
       column.id === columnId
         ? { ...column, cards: [...(column.cards || []), card] }
-        : column
+        : column,
     ),
   };
 };
@@ -21,10 +21,10 @@ const updateCardInBoard = (board, columnId, cardId, updater) => {
         ? {
             ...column,
             cards: (column.cards || []).map((card) =>
-              card.id === cardId ? updater(card) : card
+              card.id === cardId ? updater(card) : card,
             ),
           }
-        : column
+        : column,
     ),
   };
 };
@@ -55,7 +55,7 @@ const useBoardMutations = (boardId) => {
         comments: payload.comments || [],
       };
       queryClient.setQueryData(boardKey, (current) =>
-        current ? addCardToBoard(current, columnId, optimisticCard) : current
+        current ? addCardToBoard(current, columnId, optimisticCard) : current,
       );
       return { previous };
     },
@@ -94,7 +94,7 @@ const useBoardMutations = (boardId) => {
               ...card,
               comments: [...(card.comments || []), optimisticComment],
             }))
-          : current
+          : current,
       );
       return { previous };
     },
@@ -111,7 +111,7 @@ const useBoardMutations = (boardId) => {
         return updateCardInBoard(current, columnId, cardId, (card) => ({
           ...card,
           comments: (card.comments || []).map((comment) =>
-            comment.id === payload.id ? { ...comment, ...created } : comment
+            comment.id === payload.id ? { ...comment, ...created } : comment,
           ),
         }));
       });
@@ -133,7 +133,7 @@ const useBoardMutations = (boardId) => {
               ...card,
               ...payload,
             }))
-          : current
+          : current,
       );
       return { previous };
     },
