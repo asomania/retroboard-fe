@@ -7,7 +7,6 @@ import BoardCard from "../components/board/BoardCard.jsx";
 import BoardRawData from "../components/board/BoardRawData.jsx";
 import AddCardModal from "../components/modals/AddCardModal.jsx";
 import { useDeleteCard } from "../api/queries/cards.js";
-//import ParticipantsModal from "../components/modals/ParticipantsModal.jsx";
 import { useBoard } from "../hooks/useBoard.js";
 import { useBoardMutations } from "../hooks/useBoardMutations.js";
 import { useDraftState } from "../hooks/useDraftState.js";
@@ -23,19 +22,25 @@ import UserSignModal from "../components/modals/UserSignModal.jsx";
 const BoardDetailPage = () => {
   const { boardID } = useParams({ from: "/board/$boardID" });
   const [activeColumnId, setActiveColumnId] = useState(null);
-  const participantsModal = useToggle(false);
+  const [draggingCard, setDraggingCard] = useState(null);
+  const [dropColumnId, setDropColumnId] = useState(null);
   const addCardModal = useToggle(false);
-  const userSignModal = useToggle(false);
-  //const [showUserSignModal, setShowUserSignModal] = useState(false);
+  const {
+    value: isUserSignOpen,
+    open: openUserSignModal,
+    close: closeUserSignModal,
+  } = useToggle(false);
   const { data, error, isLoading } = useBoard(boardID);
   const { deleteCard } = useDeleteCard(boardID);
   const {
     createCard,
     createComment,
     likeCard,
+    moveCard,
     isCreatingCard,
     isCreatingComment,
     isLikingCard,
+    isMovingCard,
   } = useBoardMutations(boardID);
   const { getDraft, setDraft, clearDraft } = useDraftState();
   useBoardStream(boardID);
@@ -65,9 +70,10 @@ const BoardDetailPage = () => {
   const handleAddComment = async (columnId, cardId) => {
     const text = getDraft("comment", cardId).trim();
     if (!text || !data) return;
+    const author = localStorage.getItem("user")?.trim() || "Sen";
     const payload = {
       id: createClientId("comment"),
-      author: localStorage.getItem("user") ?? "Sen",
+      author,
       text,
       createdAt: new Date().toISOString(),
     };
@@ -113,11 +119,47 @@ const BoardDetailPage = () => {
       setActiveColumnId(null);
     }
   };
+
+  const handleCardDragStart = (event, fromColumnId, item) => {
+    event.dataTransfer.effectAllowed = "move";
+    setDraggingCard({ fromColumnId, item });
+  };
+
+  const handleColumnDragOver = (event, columnId) => {
+    if (!draggingCard) return;
+    event.preventDefault();
+    if (dropColumnId !== columnId) {
+      setDropColumnId(columnId);
+    }
+  };
+
+  const handleColumnDrop = async (event, toColumnId) => {
+    event.preventDefault();
+    if (!draggingCard) return;
+    const { fromColumnId, item } = draggingCard;
+
+    setDropColumnId(null);
+    setDraggingCard(null);
+
+    if (fromColumnId === toColumnId) return;
+
+    try {
+      await moveCard(fromColumnId, toColumnId, item);
+    } catch (requestError) {
+      console.error(requestError);
+    }
+  };
+
+  const handleCardDragEnd = () => {
+    setDropColumnId(null);
+    setDraggingCard(null);
+  };
+
   useEffect(() => {
     if (localStorage.getItem("user") === null) {
-      userSignModal.open();
+      openUserSignModal();
     }
-  }, []);
+  }, [openUserSignModal]);
 
   return (
     <div className="relative min-h-screen bg-slate-950 text-slate-50">
@@ -125,18 +167,17 @@ const BoardDetailPage = () => {
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(60deg,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:72px_72px]" />
 
       <UserSignModal
-        isOpen={userSignModal.value}
-        onClose={userSignModal.close}
+        isOpen={isUserSignOpen}
+        onClose={closeUserSignModal}
       />
 
       <main className="relative mx-auto max-w-6xl px-6 py-10">
         <BoardHeader
           boardID={boardID}
+          boardName={data?.name}
           isLoading={isLoading}
           error={error}
           hasData={Boolean(data)}
-          participantsCount={data?.participants?.length ?? 0}
-          onOpenParticipants={participantsModal.open}
         />
 
         <section className="mt-8 grid gap-4 md:grid-cols-3">
@@ -146,6 +187,13 @@ const BoardDetailPage = () => {
               column={column}
               onOpenAddCard={() => openAddCardModal(column.id)}
               isAddDisabled={!data || isCreatingCard}
+              onCardDragOver={(event) => handleColumnDragOver(event, column.id)}
+              onCardDrop={(event) => handleColumnDrop(event, column.id)}
+              isDropActive={
+                Boolean(draggingCard) &&
+                dropColumnId === column.id &&
+                draggingCard?.fromColumnId !== column.id
+              }
             >
               {column.items.map((item, idx) => (
                 <BoardCard
@@ -158,6 +206,12 @@ const BoardDetailPage = () => {
                   onAddComment={() => handleAddComment(column.id, item.id)}
                   disableAdd={!data || isCreatingComment}
                   onDelete={() => handleDeleteCard(column.id, item.id)}
+                  isDraggable={Boolean(data) && !isMovingCard}
+                  onDragStart={(event) =>
+                    handleCardDragStart(event, column.id, item)
+                  }
+                  onDragEnd={handleCardDragEnd}
+                  isDragging={draggingCard?.item?.id === item.id}
                   onLike={
                     !data || isLikingCard
                       ? undefined
@@ -178,16 +232,6 @@ const BoardDetailPage = () => {
         <BoardRawData data={data} />
       </main>
 
-      {/*<ParticipantsModal */}
-      {/* participantsModal.value && (
-        <ParticipantsModal
-          isOpen={participantsModal.value}
-          onClose={participantsModal.close}
-          boardName={data?.name}
-          boardID={boardID}
-          participants={data?.participants ?? []}
-        />
-      ) */}
       <AddCardModal
         isOpen={addCardModal.value}
         columnId={activeColumnId}

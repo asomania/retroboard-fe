@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createCard, updateCard } from "../api/domain/cards";
+import { createCard, moveCard as moveCardApi, updateCard } from "../api/domain/cards";
 import { createComment } from "../api/domain/comments";
 
 const addCardToBoard = (board, columnId, card) => {
@@ -29,15 +29,45 @@ const updateCardInBoard = (board, columnId, cardId, updater) => {
   };
 };
 
+const moveCardInBoard = (board, fromColumnId, toColumnId, cardId, nextCard) => {
+  let movedCard = null;
+
+  const columnsWithoutCard = board.columns.map((column) => {
+    if (column.id !== fromColumnId) return column;
+    const cards = column.cards || [];
+    movedCard = cards.find((card) => card.id === cardId) || null;
+    return {
+      ...column,
+      cards: cards.filter((card) => card.id !== cardId),
+    };
+  });
+
+  if (!movedCard) return board;
+
+  return {
+    ...board,
+    columns: columnsWithoutCard.map((column) =>
+      column.id === toColumnId
+        ? {
+            ...column,
+            cards: [...(column.cards || []), { ...movedCard, ...nextCard }],
+          }
+        : column,
+    ),
+  };
+};
+
 /**
  * @param {string} boardId
  * @returns {{
  *   createCard: (columnId: string, payload: any) => Promise<any>,
  *   createComment: (columnId: string, cardId: string, payload: any) => Promise<any>,
  *   likeCard: (columnId: string, cardId: string, payload: { text?: string, votes: number }) => Promise<any>,
+ *   moveCard: (fromColumnId: string, toColumnId: string, card: any) => Promise<any>,
  *   isCreatingCard: boolean,
  *   isCreatingComment: boolean,
- *   isLikingCard: boolean
+ *   isLikingCard: boolean,
+ *   isMovingCard: boolean
  * }}
  */
 const useBoardMutations = (boardId) => {
@@ -148,6 +178,29 @@ const useBoardMutations = (boardId) => {
     },
   });
 
+  const moveCardMutation = useMutation({
+    mutationFn: ({ toColumnId, card }) => moveCardApi(boardId, card.id, toColumnId),
+    onMutate: async ({ fromColumnId, toColumnId, card }) => {
+      await queryClient.cancelQueries({ queryKey: boardKey });
+      const previous = queryClient.getQueryData(boardKey);
+      queryClient.setQueryData(boardKey, (current) =>
+        current
+          ? moveCardInBoard(current, fromColumnId, toColumnId, card.id, card)
+          : current,
+      );
+      return { previous };
+    },
+    onError: (mutationError, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(boardKey, context.previous);
+      }
+      console.error(mutationError);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: boardKey });
+    },
+  });
+
   const createCardRequest = (columnId, payload) =>
     createCardMutation.mutateAsync({ columnId, payload });
 
@@ -157,13 +210,18 @@ const useBoardMutations = (boardId) => {
   const likeCardRequest = (columnId, cardId, payload) =>
     likeCardMutation.mutateAsync({ columnId, cardId, payload });
 
+  const moveCardRequest = (fromColumnId, toColumnId, card) =>
+    moveCardMutation.mutateAsync({ fromColumnId, toColumnId, card });
+
   return {
     createCard: createCardRequest,
     createComment: createCommentRequest,
     likeCard: likeCardRequest,
+    moveCard: moveCardRequest,
     isCreatingCard: createCardMutation.isPending,
     isCreatingComment: createCommentMutation.isPending,
     isLikingCard: likeCardMutation.isPending,
+    isMovingCard: moveCardMutation.isPending,
   };
 };
 

@@ -12,6 +12,11 @@ const updateCard = (boardId, columnId, cardId, payload) =>
     method: "PUT",
     body: JSON.stringify({ ...payload, boardId, columnId }),
   });
+const moveCard = (boardId, cardId, toColumnId) =>
+  request(`/cards/${cardId}/move`, {
+    method: "POST",
+    body: JSON.stringify({ boardId, toColumnId }),
+  });
 const deleteCard = (boardId, columnId, cardId) =>
   request(
     `/cards/${cardId}?${new URLSearchParams({ boardId, columnId })}`,
@@ -20,4 +25,4 @@ const deleteCard = (boardId, columnId, cardId) =>
     }
   );
 
-export { listCards, createCard, updateCard, deleteCard };
+export { listCards, createCard, updateCard, moveCard, deleteCard };

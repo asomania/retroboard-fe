@@ -1,10 +1,29 @@
-import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
+import { useState } from "react";
+import {
+  createFileRoute,
+  Outlet,
+  useNavigate,
+} from "@tanstack/react-router";
 
 export const Route = createFileRoute("/__layout")({
   component: Layout,
 });
 
 function Layout() {
+  const [joinKey, setJoinKey] = useState("");
+  const navigate = useNavigate();
+
+  const handleJoinWithKey = (event) => {
+    event.preventDefault();
+    const trimmedKey = joinKey.trim();
+    if (!trimmedKey) return;
+
+    navigate({
+      to: "/board/$boardID",
+      params: { boardID: trimmedKey },
+    });
+  };
+
   return (
     <div className="relative min-h-screen bg-slate-950 text-slate-50">
       <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_10%_20%,rgba(14,165,233,0.18),transparent_32%),radial-gradient(circle_at_90%_12%,rgba(236,72,153,0.16),transparent_28%),radial-gradient(circle_at_35%_80%,rgba(94,234,212,0.2),transparent_26%)]" />
@@ -28,22 +47,21 @@ function Layout() {
           </div>
 
           <div className="flex flex-1 items-center justify-end gap-3">
-            <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs text-white/80 shadow-sm md:flex">
-              <span className="h-2 w-2 rounded-full bg-emerald-400" />
-              <span>Canlı güncellemeler açık</span>
-            </div>
-            <Link
-              to="/board"
-              className="rounded-lg border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition hover:border-white/40 hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"
-            >
-              Boardu aç
-            </Link>
-            <button
-              type="button"
-              className="rounded-lg bg-emerald-400 px-4 py-2 text-sm font-semibold text-emerald-950 shadow-lg shadow-emerald-500/40 transition hover:bg-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-200"
-            >
-              Yeni board
-            </button>
+            <form className="flex items-center gap-2" onSubmit={handleJoinWithKey}>
+              <input
+                type="text"
+                placeholder="Board ID"
+                value={joinKey}
+                onChange={(event) => setJoinKey(event.target.value)}
+                className="w-28 rounded-lg border border-white/15 bg-black/20 px-3 py-2 text-sm text-white placeholder:text-white/40 outline-none transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/40 sm:w-44"
+              />
+              <button
+                type="submit"
+                className="rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-cyan-950 shadow-lg shadow-cyan-500/35 transition hover:bg-cyan-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200"
+              >
+                ID ile gir
+              </button>
+            </form>
           </div>
         </header>
 

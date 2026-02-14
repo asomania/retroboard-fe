@@ -6,6 +6,9 @@ import Badge from "../common/Badge.jsx";
  * @param {{ id: string, title: string, tagline: string, items: Array }} props.column
  * @param {() => void} props.onOpenAddCard
  * @param {boolean} [props.isAddDisabled]
+ * @param {(event: React.DragEvent<HTMLDivElement>) => void} [props.onCardDragOver]
+ * @param {(event: React.DragEvent<HTMLDivElement>) => void} [props.onCardDrop]
+ * @param {boolean} [props.isDropActive]
  * @param {React.ReactNode} props.children
  * @returns {JSX.Element}
  */
@@ -13,6 +16,9 @@ const BoardColumn = ({
   column,
   onOpenAddCard,
   isAddDisabled = false,
+  onCardDragOver,
+  onCardDrop,
+  isDropActive = false,
   children,
 }) => {
   const hasItems = column.items.length > 0;
@@ -41,7 +47,13 @@ const BoardColumn = ({
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col gap-2">
+      <div
+        className={`flex flex-1 flex-col gap-2 rounded-xl p-1 transition ${
+          isDropActive ? "bg-emerald-300/10 ring-1 ring-emerald-200/40" : ""
+        }`}
+        onDragOver={onCardDragOver}
+        onDrop={onCardDrop}
+      >
         {!hasItems && (
           <p className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/60">
             Henüz kart yok

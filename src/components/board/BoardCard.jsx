@@ -13,6 +13,10 @@ import { useToggle } from "../../hooks/useToggle.js";
  * @param {boolean} props.disableAdd
  * @param {() => void} [props.onLike]
  * @param {() => void} [props.onDelete]
+ * @param {boolean} [props.isDraggable]
+ * @param {(event: React.DragEvent<HTMLElement>) => void} [props.onDragStart]
+ * @param {(event: React.DragEvent<HTMLElement>) => void} [props.onDragEnd]
+ * @param {boolean} [props.isDragging]
  * @returns {JSX.Element}
  */
 const BoardCard = ({
@@ -23,6 +27,10 @@ const BoardCard = ({
   disableAdd,
   onLike,
   onDelete,
+  isDraggable = false,
+  onDragStart,
+  onDragEnd,
+  isDragging = false,
 }) => {
   const comments = Array.isArray(item.comments) ? item.comments : [];
   const { value: isCommentsOpen, toggle: toggleComments } = useToggle(false);
@@ -33,7 +41,14 @@ const BoardCard = ({
   };
 
   return (
-    <article className="group relative space-y-2 rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)] transition-all duration-200 hover:scale-[1.02] hover:border-white/20 hover:bg-white/15">
+    <article
+      className={`group relative space-y-2 rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)] transition-all duration-200 hover:scale-[1.02] hover:border-white/20 hover:bg-white/15 ${
+        isDragging ? "opacity-50" : ""
+      }`}
+      draggable={isDraggable}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+    >
       <p className="text-base font-medium leading-relaxed">
         {item.text || item.title || "Kart"}
       </p>
