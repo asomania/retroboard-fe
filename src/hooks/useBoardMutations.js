@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createCard, updateCard } from "../api/domain/cards";
+import { createCard, moveCard as moveCardApi, updateCard } from "../api/domain/cards";
 import { createComment } from "../api/domain/comments";
 
 const addCardToBoard = (board, columnId, card) => {
@@ -8,7 +8,7 @@ const addCardToBoard = (board, columnId, card) => {
     columns: board.columns.map((column) =>
       column.id === columnId
         ? { ...column, cards: [...(column.cards || []), card] }
-        : column
+        : column,
     ),
   };
 };
@@ -21,10 +21,38 @@ const updateCardInBoard = (board, columnId, cardId, updater) => {
         ? {
             ...column,
             cards: (column.cards || []).map((card) =>
-              card.id === cardId ? updater(card) : card
+              card.id === cardId ? updater(card) : card,
             ),
           }
-        : column
+        : column,
+    ),
+  };
+};
+
+const moveCardInBoard = (board, fromColumnId, toColumnId, cardId, nextCard) => {
+  let movedCard = null;
+
+  const columnsWithoutCard = board.columns.map((column) => {
+    if (column.id !== fromColumnId) return column;
+    const cards = column.cards || [];
+    movedCard = cards.find((card) => card.id === cardId) || null;
+    return {
+      ...column,
+      cards: cards.filter((card) => card.id !== cardId),
+    };
+  });
+
+  if (!movedCard) return board;
+
+  return {
+    ...board,
+    columns: columnsWithoutCard.map((column) =>
+      column.id === toColumnId
+        ? {
+            ...column,
+            cards: [...(column.cards || []), { ...movedCard, ...nextCard }],
+          }
+        : column,
     ),
   };
 };
@@ -35,9 +63,11 @@ const updateCardInBoard = (board, columnId, cardId, updater) => {
  *   createCard: (columnId: string, payload: any) => Promise<any>,
  *   createComment: (columnId: string, cardId: string, payload: any) => Promise<any>,
  *   likeCard: (columnId: string, cardId: string, payload: { text?: string, votes: number }) => Promise<any>,
+ *   moveCard: (fromColumnId: string, toColumnId: string, card: any) => Promise<any>,
  *   isCreatingCard: boolean,
  *   isCreatingComment: boolean,
- *   isLikingCard: boolean
+ *   isLikingCard: boolean,
+ *   isMovingCard: boolean
  * }}
  */
 const useBoardMutations = (boardId) => {
@@ -55,7 +85,7 @@ const useBoardMutations = (boardId) => {
         comments: payload.comments || [],
       };
       queryClient.setQueryData(boardKey, (current) =>
-        current ? addCardToBoard(current, columnId, optimisticCard) : current
+        current ? addCardToBoard(current, columnId, optimisticCard) : current,
       );
       return { previous };
     },
@@ -94,7 +124,7 @@ const useBoardMutations = (boardId) => {
               ...card,
               comments: [...(card.comments || []), optimisticComment],
             }))
-          : current
+          : current,
       );
       return { previous };
     },
@@ -111,7 +141,7 @@ const useBoardMutations = (boardId) => {
         return updateCardInBoard(current, columnId, cardId, (card) => ({
           ...card,
           comments: (card.comments || []).map((comment) =>
-            comment.id === payload.id ? { ...comment, ...created } : comment
+            comment.id === payload.id ? { ...comment, ...created } : comment,
           ),
         }));
       });
@@ -133,7 +163,30 @@ const useBoardMutations = (boardId) => {
               ...card,
               ...payload,
             }))
-          : current
+          : current,
+      );
+      return { previous };
+    },
+    onError: (mutationError, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(boardKey, context.previous);
+      }
+      console.error(mutationError);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: boardKey });
+    },
+  });
+
+  const moveCardMutation = useMutation({
+    mutationFn: ({ toColumnId, card }) => moveCardApi(boardId, card.id, toColumnId),
+    onMutate: async ({ fromColumnId, toColumnId, card }) => {
+      await queryClient.cancelQueries({ queryKey: boardKey });
+      const previous = queryClient.getQueryData(boardKey);
+      queryClient.setQueryData(boardKey, (current) =>
+        current
+          ? moveCardInBoard(current, fromColumnId, toColumnId, card.id, card)
+          : current,
       );
       return { previous };
     },
@@ -157,13 +210,18 @@ const useBoardMutations = (boardId) => {
   const likeCardRequest = (columnId, cardId, payload) =>
     likeCardMutation.mutateAsync({ columnId, cardId, payload });
 
+  const moveCardRequest = (fromColumnId, toColumnId, card) =>
+    moveCardMutation.mutateAsync({ fromColumnId, toColumnId, card });
+
   return {
     createCard: createCardRequest,
     createComment: createCommentRequest,
     likeCard: likeCardRequest,
+    moveCard: moveCardRequest,
     isCreatingCard: createCardMutation.isPending,
     isCreatingComment: createCommentMutation.isPending,
     isLikingCard: likeCardMutation.isPending,
+    isMovingCard: moveCardMutation.isPending,
   };
 };
 

@@ -1,5 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createCard, deleteCard, listCards, updateCard } from "../domain/cards";
+import {
+  createCard,
+  deleteCard as deleteCardApi,
+  listCards,
+  updateCard,
+} from "../domain/cards";
 
 const cardsKey = (boardId, columnId) => [
   "boards",
@@ -38,15 +43,21 @@ const useUpdateCard = (boardId, columnId, cardId) => {
   });
 };
 
-const useDeleteCard = (boardId, columnId, cardId) => {
+const useDeleteCard = (boardId) => {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: () => deleteCard(boardId, columnId, cardId),
-    onSuccess: () => {
+  const mutation = useMutation({
+    mutationFn: ({ columnId, cardId }) =>
+      deleteCardApi(boardId, columnId, cardId),
+    onSuccess: (_deleted, { columnId }) => {
       queryClient.invalidateQueries({ queryKey: cardsKey(boardId, columnId) });
       queryClient.invalidateQueries({ queryKey: ["board", boardId] });
     },
   });
+
+  const deleteCard = (columnId, cardId) =>
+    mutation.mutateAsync({ columnId, cardId });
+
+  return { ...mutation, deleteCard };
 };
 
 export { useCards, useCreateCard, useUpdateCard, useDeleteCard };
