@@ -6,11 +6,12 @@ import { useToggle } from "../../hooks/useToggle.js";
 
 /**
  * @param {object} props
- * @param {{ id?: string, text?: string, title?: string, votes?: number, comments?: Array }} props.item
+ * @param {{ id?: string, text?: string, title?: string, votes?: number, comments?: Array, createdByName?: string, createdByDisplayName?: string }} props.item
  * @param {string} props.commentDraft
  * @param {(value: string) => void} props.onCommentDraftChange
  * @param {() => void} props.onAddComment
  * @param {boolean} props.disableAdd
+ * @param {boolean} [props.showCreatorName]
  * @param {() => void} [props.onLike]
  * @param {() => void} [props.onDelete]
  * @param {boolean} [props.isDraggable]
@@ -27,12 +28,14 @@ const BoardCard = ({
   disableAdd,
   onLike,
   onDelete,
+  showCreatorName = true,
   isDraggable = false,
   onDragStart,
   onDragEnd,
   isDragging = false,
 }) => {
   const comments = Array.isArray(item.comments) ? item.comments : [];
+  const creatorName = item.createdByName || item.createdByDisplayName || "";
   const { value: isCommentsOpen, toggle: toggleComments } = useToggle(false);
 
   const handleSubmitComment = async () => {
@@ -52,6 +55,9 @@ const BoardCard = ({
       <p className="text-base font-medium leading-relaxed">
         {item.text || item.title || "Kart"}
       </p>
+      {showCreatorName && creatorName && (
+        <p className="text-xs text-white/60">Oluşturan: {creatorName}</p>
+      )}
 
       <div className="flex flex-wrap items-center gap-3 text-xs text-white/70">
         <button
