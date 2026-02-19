@@ -1,17 +1,24 @@
 import Modal from "../../Modal.jsx";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getBoardDisplayName } from "../../utils/clientIdentity";
 
-const UserSignModal = ({ isOpen, onClose }) => {
+const UserSignModal = ({ boardId, isOpen, onClose, onSaveIdentity }) => {
   const [name, setName] = useState("");
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (!isOpen || !boardId) return;
+    setName(getBoardDisplayName(boardId));
+  }, [boardId, isOpen]);
 
   const handleSignIn = () => {
     const trimmedName = name.trim();
     if (!trimmedName) return;
-    localStorage.setItem("user", trimmedName);
+    const result = onSaveIdentity?.(trimmedName);
+    if (!result) return;
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <Modal>

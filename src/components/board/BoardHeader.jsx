@@ -38,13 +38,23 @@ const BoardHeader = ({ boardID, boardName, isLoading, error, hasData }) => {
           <button
             type="button"
             onClick={handleCopyBoardId}
-            className="rounded-md border border-white/15 bg-white/10 px-2 py-1 text-xs font-semibold text-white transition hover:bg-white/20"
+            title={copyState === "copied" ? "Kopyalandi" : "Board ID kopyala"}
+            aria-label={copyState === "copied" ? "Kopyalandi" : "Board ID kopyala"}
+            className="rounded-md border border-white/15 bg-white/10 p-1.5 text-white transition hover:bg-white/20"
           >
-            {copyState === "copied"
-              ? "Kopyalandi"
-              : copyState === "error"
-                ? "Kopyalanamadi"
-                : "ID Kopyala"}
+            <svg
+              viewBox="0 0 24 24"
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+            </svg>
           </button>
         </div>
       </div>

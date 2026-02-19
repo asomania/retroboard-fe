@@ -3,24 +3,44 @@ import logo from "/team.svg";
 import { useNavigate } from "@tanstack/react-router";
 import { useCreateBoard } from "./api/queries/boards";
 import { createClientId } from "./utils/ids";
+import {
+  getOrCreateClientUserId,
+  getPreferredDisplayName,
+  setBoardDisplayName,
+  setPreferredDisplayName,
+} from "./utils/clientIdentity";
+import { validateBoardCreation } from "./validations/boardCreation";
 
 function App() {
   const [boardName, setBoardName] = useState("");
+  const [displayName, setDisplayName] = useState(() => getPreferredDisplayName());
+  const [formErrors, setFormErrors] = useState({});
   const navigate = useNavigate();
   const { mutateAsync, isPending, error } = useCreateBoard();
 
   const handleCreateBoard = async (event) => {
     event.preventDefault();
-    const name = boardName.trim();
-    if (!name) return;
+    setFormErrors({});
+
+    const validation = validateBoardCreation({ boardName, displayName });
+    if (!validation.isValid) {
+      setFormErrors(validation.errors);
+      return;
+    }
+
+    const { boardName: nextBoardName, displayName: nextDisplayName } =
+      validation.values;
 
     try {
+      getOrCreateClientUserId();
+      setPreferredDisplayName(nextDisplayName);
       const created = await mutateAsync({
         id: createClientId("board"),
-        name,
+        name: nextBoardName,
         date: new Date().toISOString(),
       });
       if (created?.id) {
+        setBoardDisplayName(created.id, nextDisplayName);
         navigate({
           to: "/board/$boardID",
           params: { boardID: created.id },
@@ -107,15 +127,42 @@ function App() {
                       type="text"
                       placeholder="Örn: Sprint 12 - Demo hazırlığı"
                       value={boardName}
-                      onChange={(event) => setBoardName(event.target.value)}
+                      onChange={(event) => {
+                        setBoardName(event.target.value);
+                        if (formErrors.boardName) {
+                          setFormErrors((prev) => ({ ...prev, boardName: "" }));
+                        }
+                      }}
                       className="w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-white placeholder:text-white/40 shadow-inner shadow-black/40 outline-none transition focus:border-emerald-300 focus:ring-2 focus:ring-emerald-300/40"
                     />
                   </label>
+                  {formErrors.boardName && (
+                    <p className="text-xs text-rose-200">{formErrors.boardName}</p>
+                  )}
+
+                  <label className="block space-y-2 text-sm font-medium text-white/80">
+                    Görünen adın
+                    <input
+                      type="text"
+                      placeholder="Örn: Eren"
+                      value={displayName}
+                      onChange={(event) => {
+                        setDisplayName(event.target.value);
+                        if (formErrors.displayName) {
+                          setFormErrors((prev) => ({ ...prev, displayName: "" }));
+                        }
+                      }}
+                      className="w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-white placeholder:text-white/40 shadow-inner shadow-black/40 outline-none transition focus:border-emerald-300 focus:ring-2 focus:ring-emerald-300/40"
+                    />
+                  </label>
+                  {formErrors.displayName && (
+                    <p className="text-xs text-rose-200">{formErrors.displayName}</p>
+                  )}
 
                   <button
                     type="submit"
                     className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 px-4 py-3 text-sm font-semibold uppercase tracking-wide text-emerald-950 shadow-lg shadow-emerald-500/40 transition hover:bg-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-200"
-                    disabled={isPending || !boardName.trim()}
+                    disabled={isPending}
                   >
                     {isPending ? "Oluşturuluyor..." : "Board’u başlat"}
                   </button>
